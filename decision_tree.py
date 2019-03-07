@@ -1,18 +1,19 @@
 import numpy as np
-import math, csv, operator
-import pandas as pd
+import csv
 
 
 # 读取数据
 def readData(filename):
     with open(filename) as f:
         reader = csv.reader(f)
-        atrributes = next(reader)[1:9]
+        attributes = next(reader)[1:9]
         dataset = []
         for line in reader:
             dataset.append(line[1:10])
     # 返回数据集列表及属性列表
-    return dataset, atrributes
+    print('dataset = {}'.format(dataset))
+    print('attributes = {}'.format(attributes))
+    return dataset, attributes
 
 # 计算当前输入数据集的信息熵Ent
 def Ent(dataset):
@@ -36,16 +37,14 @@ def splitDataset(dataset, index, value, is_continuous, part=0):
         for vec in dataset:
             # 根据参数part，将连续值属性划分为两个部分分别输出
             if float(vec[index]) <= value and part == 0:
-                # sub_vec = vec[:index].extend(vec[index+1:])
                 sub_dataset.append(vec)
             elif float(vec[index]) > value and part == 1:
-                # sub_vec = vec[:index].extend(vec[index+1:])
                 sub_dataset.append(vec)
     else:
         for vec in dataset:
             if str(vec[index]) == str(value):
-                # sub_vec = vec[:index].extend(vec[index + 1:])
                 sub_dataset.append(vec)
+    # print("sub_dataset = {}".format(sub_dataset))
     return sub_dataset
 
 
@@ -90,63 +89,48 @@ def attriToSplit(dataset):
                 max_gain = gain
                 attri_to_split = index
                 split_value = None
+    # print('attri_to_split = {}'.format(attri_to_split))
+    # print('split_value = {}'.format(split_value))
     return attri_to_split, split_value
 
 
-def majorClass(c_list):
-    classCount = {}
-    for vote in c_list:
-        if vote not in classCount:
-            classCount[vote] = 0
-        classCount[vote] += 1
-    sortedClassCount = sorted(classCount.items(), key=operator.itemgetter(1), reverse=True)  # 返回数组
-    return sortedClassCount[0][0]
+def count(dataset, index):
+    num = {}
+    for vec in dataset:
+        if vec[index] in num:
+            num[vec[index]] += 1
+        else:
+            num[vec[index]] = 1
+    return num
 
 
-def decisionTree(dataset, attributes, all_dataset, all_attributes):
+def decisionTree(dataset, attributes):
     class_list = [e[-1] for e in dataset]
+
     # 如果样本dataset全部属于同一类别c"是"或者"否"，返回c类叶节点
     if class_list.count(class_list[0]) == len(class_list):
         return class_list[0]
+
     # 样本dataset 属性值相同，返回类别标签最多的类别
-    # if all(len(count(dataset,attributes[i]))==1 for i in range(0,len(attributes)-1)):
-    #     return majorClass(dataset)
-    index, value = attriToSplit(dataset)
-    attri_tosplit = all_attributes[index]
+    if all(len(count(dataset,i)) == 1 for i in range(0,len(dataset)-1)):
+        return max(class_list, key=class_list.count)
 
+    index, value = attriToSplit(dataset)  # index=1, value=None
+    attri_tosplit = attributes[index]   # 根蒂
     mytree = {attri_tosplit: {}}
-
-    # 获取划分属性attri的所有取值,由于随着迭代递归，子集中的样本减少，可能会丢失属性值
-    # best_index = all_attributes.index(attri_tosplit)
-    attri_values = set([e[index] for e in all_dataset])
-
-    # 离散值
-    if value == None:
-        del(attributes[index])
-        sub_attributes = attributes  # 子属性集中去除已划分的属性
-        a_values = set([e[index] for e in dataset])
-        # if a_values == attri_values:
-        for val in a_values:
-            mytree[attri_tosplit][val] = decisionTree(splitDataset(dataset, index, val, False),
-                                                      sub_attributes,all_dataset, all_attributes)
-    # 连续值
+    # 连续值or离散值
+    if value is None:
+        attri_values = set(vec[index] for vec in dataset)
+        for val in attri_values:
+            mytree[attri_tosplit][val] = decisionTree(splitDataset(dataset, index, val, False),attributes)
     else:
-        sub_attributes = attributes
-        mytree[attri_tosplit]['<='+str(value)] = decisionTree(splitDataset(dataset, index, value, False, 0),
-                                                  sub_attributes,all_dataset, all_attributes)
-        mytree[attri_tosplit]['>' + str(value)] = decisionTree(splitDataset(dataset, index, value, False, 1),
-                                                                sub_attributes,all_dataset, all_attributes)
-
+        mytree[attri_tosplit]['<='+str(value)] = decisionTree(splitDataset(dataset, index, value, True, 0), attributes)
+        mytree[attri_tosplit]['>'+str(value)] = decisionTree(splitDataset(dataset, index, value, True, 1), attributes)
     return mytree
-
-
-
 
 
 if __name__ == '__main__':
     file_path = 'data\watermelon3_0_Ch.csv'
     data, attributes = readData(file_path)
-    all_dataset = data
-    all_attributes = attributes
-    mytree = decisionTree(data, attributes, all_dataset, all_attributes)
+    mytree = decisionTree(data, attributes)
     print(mytree)
