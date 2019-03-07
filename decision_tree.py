@@ -23,18 +23,6 @@ def Ent(dataset):
     labels_ent = map(lambda p : p*np.log2(p), labels_p)
     return -1 * sum(labels_ent)
 
-# # 计算当前输入数据集的信息熵Ent
-# def Ent(dataset):
-#     labels = defaultdict(int)
-#     for vec in dataset:
-#         label = vec[-1]
-#         labels[label] += 1
-#     ent = 0
-#     for l in labels.keys():
-#         p = float(labels[l])/float(len(dataset))
-#         ent -= (p*np.log2(p))
-#     return ent
-
 # 基于某个属性 划分数据集
 # 1.分类函数
 split_funcs = {
@@ -47,26 +35,9 @@ split_funcs = {
     }
 }
 # 2.划分
-def splitDataset2(dataset, index, value, is_continuous, part=0):
+def splitDataset(dataset, index, value, is_continuous, part=0):
     sub_dataset = [vec for vec in dataset if split_funcs[is_continuous][part](vec[index], value)]
     return sub_dataset
-
-def splitDataset(dataset, index, value, is_continuous, part=0):
-    sub_dataset = []
-    if is_continuous:  # index=6/7
-        for vec in dataset:
-            # 根据参数part，将连续值属性划分为两个部分分别输出
-            if float(vec[index]) <= value and part == 0:
-                sub_dataset.append(vec)
-            elif float(vec[index]) > value and part == 1:
-                sub_dataset.append(vec)
-    else:
-        for vec in dataset:
-            if str(vec[index]) == str(value):
-                sub_dataset.append(vec)
-    # print("sub_dataset = {}".format(sub_dataset))
-    return sub_dataset
-
 
 def attriToSplit(dataset):
     ent_D = Ent(dataset)   # 根节点的信息熵
