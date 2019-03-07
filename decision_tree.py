@@ -1,6 +1,6 @@
 import numpy as np
 import csv
-
+from collections import defaultdict
 
 # 读取数据
 def readData(filename):
@@ -17,11 +17,9 @@ def readData(filename):
 
 # 计算当前输入数据集的信息熵Ent
 def Ent(dataset):
-    labels = {}
+    labels = defaultdict(int)
     for vec in dataset:
         label = vec[-1]
-        if label not in labels.keys():
-            labels[label] = 0
         labels[label] += 1
     ent = 0
     for l in labels.keys():
