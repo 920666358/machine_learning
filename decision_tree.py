@@ -129,8 +129,62 @@ def decisionTree(dataset, attributes):
     return mytree
 
 
+def treeTest(tree, testdata, attibutes, predi=[]):
+    index = attibutes.index(list(tree)[0])
+    for vec in testdata:
+        sub_tree = tree[list(tree)[0]][vec[index]]
+        # print(sub_tree)
+        if sub_tree in ['是','否']:
+            predi.append(sub_tree)
+            continue
+
+        index_2 = attibutes.index(list(sub_tree)[0])
+        attri_v = list(sub_tree[list(sub_tree)[0]].keys())
+        if all(c in '0123456789.-' for c in vec[index_2]):
+            split_value = float(attri_v[0][2:])
+            ss_tree = sub_tree[list(sub_tree)[0]]   # {'<=0.3815': '否', '>0.3815': '是'}
+
+            for key in ss_tree.keys():
+                if key[0] == '<' and (float(vec[index_2]) <= split_value):
+                    sss_tree = ss_tree[key]
+                    if sss_tree in ['是', '否']:
+                        predi.append(sss_tree)
+                    else:
+                        treeTest(sss_tree, [vec], attibutes, predi)
+                    break
+                elif key[0] == '>'and (float(vec[index_2]) > split_value):
+                    sss_tree = ss_tree[key]
+                    if sss_tree in ['是', '否']:
+                        predi.append(sss_tree)
+                    else:
+                        treeTest(sss_tree, [vec], attibutes, predi)
+                    break
+
+        else:
+            treeTest(sub_tree, [vec], attibutes, predi)
+    return predi
+
+
+def accuracy(predi, true_lables):
+    count = 0
+    for i in range(len(true_lables)):
+        if predi[i] == true_lables[i]:
+            count += 1
+    return count/len(true_lables)
+
+
 if __name__ == '__main__':
     file_path = 'data\watermelon3_0_Ch.csv'
     data, attributes = readData(file_path)
     mytree = decisionTree(data, attributes)
     print(mytree)
+
+    testdata = [['青绿', '稍蜷', '浊响', '清晰', '稍凹', '软粘', '0.403', '0.237'],
+                ['浅白', '稍蜷', '沉闷', '稍糊', '凹陷', '硬滑', '0.657', '0.198']]
+    true_lables = ['是', '否']
+
+    result = treeTest(mytree, testdata, attributes)
+    print(result)
+
+    a = accuracy(result, true_lables)
+    print(a)
