@@ -39,6 +39,66 @@ def splitDataset(dataset, index, value, is_continuous, part=0):
     sub_dataset = [vec for vec in dataset if split_funcs[is_continuous][part](vec[index], value)]
     return sub_dataset
 
+def isDigitalStr(a):
+    try :
+        float(a)
+        return True
+    except :
+        return False
+
+def isContinuous(a) :
+    return all(map(a, isDigitalStr))
+
+def getCandidateValue(attr_list):
+    if isContinuous(attr_list) :
+        attr_list.sort()
+        return set((attr_list[i]+attr_list[i+1])/2 for i in range(len(attr_list) -1))
+    else :
+        return set(attr_list)
+
+def getPart(attr_list):
+    if isContinuous(attr_list) :
+        return [0,1]
+    else :
+        return [0]
+def getSubDatasetsContinuous(dataset, index, attri_values) :
+    split_ent_values = defaultdict(int)
+    sub_datasets = defaultdict(list)
+    for value in attri_values :
+        for p in [0,1] :
+            sub = splitDataset(dataset, index, value, True, p)
+            split_ent_values[value] += Ent(sub)*(len(sub)/len(dataset))
+            sub_datasets[value].append(sub)
+    best_split_value = min(split_ent_values, split_ent_values.get)
+    return best_split_value, sub_datasets[best_split_value]
+    
+def getSubDatasets(dataset, index) :
+    attri_values = getCandidateValue( [e[index] for e in dataset] )  # 获取某属性的所有值的列表,不包括重复值
+    sub_datasets = []
+    split_value = None
+    if isContinuous(attri_values) :
+        split_value, sub_datasets = getSubDatasetsContinuous(dataset, index, attri_values)
+    else :
+        for v in set(attri_values) :
+            sub_datasets.append(splitDataset(dataset, index, value, False))
+    return split_value,sub_datasets
+
+def attriToSplit2(dataset):
+    candidate_split_index = dict()
+    for index in range(len(dataset[0])-1):  # 最后一个值为y标签，而非属性值
+        # 每一轮循环，处理一个属性
+        split_value, sub_datasets = getSubDatasets(dataset, index)
+        ent_list = map(lambda sub:Ent(sub)*(len(sub)/len(dataset)), sub_datasets)
+        new_ent = sum(ent_list)
+        candidate_split_index[index] = (new_ent, split_value)
+    attri_to_split = min(candidate_split_index, lambda k: candidate_split_index[k][0]) # 返回ent最小的对应index
+    split_value = candidate_split_index[attri_to_split][1] # 获取分割值，离散属性则为None
+
+    # print('attri_to_split = {}'.format(attri_to_split))
+    # print('split_value = {}'.format(split_value))
+    return attri_to_split, split_value
+
+
 def attriToSplit(dataset):
     ent_D = Ent(dataset)   # 根节点的信息熵
     max_gain = 0    # 信息增益
