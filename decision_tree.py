@@ -1,6 +1,6 @@
 import numpy as np
 import csv
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 # 读取数据
 def readData(filename):
@@ -14,37 +14,30 @@ def readData(filename):
     print('dataset = {}'.format(dataset))
     print('attributes = {}'.format(attributes))
     return dataset, attributes
-
+ 
 # 计算当前输入数据集的信息熵Ent
 def Ent(dataset):
-    labels = defaultdict(int)
-    for vec in dataset:
-        label = vec[-1]
-        labels[label] += 1
-    ent = 0
-    for l in labels.keys():
-        p = float(labels[l])/float(len(dataset))
-        ent -= (p*np.log2(p))
-    return ent
-
+    labels = [vec[-1] for vec in dataset]
+    labels_count = map(lambda label : label[1], Counter(labels).most_common())
+    labels_p = map(lambda c : c / len(dataset), labels_count)
+    labels_ent = map(lambda p : p*np.log2(p), labels_p)
+    return -1 * sum(labels_ent)
 
 # 基于某个属性 划分数据集
+# 1.分类函数
+split_funcs = {
+    False : {
+        0 : (lambda x, std_value : str(x) == str(std_value)),
+    },
+    True  : {
+        0 : (lambda x, std_value : float(x) <= float(std_value)),
+        1 : (lambda x, std_value : float(x) >  float(std_value)),
+    }
+}
+# 2.划分
 def splitDataset(dataset, index, value, is_continuous, part=0):
-    sub_dataset = []
-    if is_continuous:  # index=6/7
-        for vec in dataset:
-            # 根据参数part，将连续值属性划分为两个部分分别输出
-            if float(vec[index]) <= value and part == 0:
-                sub_dataset.append(vec)
-            elif float(vec[index]) > value and part == 1:
-                sub_dataset.append(vec)
-    else:
-        for vec in dataset:
-            if str(vec[index]) == str(value):
-                sub_dataset.append(vec)
-    # print("sub_dataset = {}".format(sub_dataset))
+    sub_dataset = [vec for vec in dataset if split_funcs[is_continuous][part](vec[index], value)]
     return sub_dataset
-
 
 def attriToSplit(dataset):
     ent_D = Ent(dataset)   # 根节点的信息熵
