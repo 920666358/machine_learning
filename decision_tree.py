@@ -47,12 +47,12 @@ def isDigitalStr(a):
         return False
 
 def isContinuous(a) :
-    return all(map(a, isDigitalStr))
+    return all(map(isDigitalStr, a))
 
 def getCandidateValue(attr_list):
     if isContinuous(attr_list) :
         attr_list.sort()
-        return set((attr_list[i]+attr_list[i+1])/2 for i in range(len(attr_list) -1))
+        return set((float(attr_list[i])+float(attr_list[i+1]))/2 for i in range(len(attr_list) -1))
     else :
         return set(attr_list)
 
@@ -69,9 +69,9 @@ def getSubDatasetsContinuous(dataset, index, attri_values) :
             sub = splitDataset(dataset, index, value, True, p)
             split_ent_values[value] += Ent(sub)*(len(sub)/len(dataset))
             sub_datasets[value].append(sub)
-    best_split_value = min(split_ent_values, split_ent_values.get)
+    best_split_value = min(split_ent_values, key = split_ent_values.get) #选择信息增益最大的，也即p*ent最小的
     return best_split_value, sub_datasets[best_split_value]
-    
+
 def getSubDatasets(dataset, index) :
     attri_values = getCandidateValue( [e[index] for e in dataset] )  # 获取某属性的所有值的列表,不包括重复值
     sub_datasets = []
@@ -79,7 +79,7 @@ def getSubDatasets(dataset, index) :
     if isContinuous(attri_values) :
         split_value, sub_datasets = getSubDatasetsContinuous(dataset, index, attri_values)
     else :
-        for v in set(attri_values) :
+        for value in set(attri_values) :
             sub_datasets.append(splitDataset(dataset, index, value, False))
     return split_value,sub_datasets
 
@@ -91,7 +91,7 @@ def attriToSplit2(dataset):
         ent_list = map(lambda sub:Ent(sub)*(len(sub)/len(dataset)), sub_datasets)
         new_ent = sum(ent_list)
         candidate_split_index[index] = (new_ent, split_value)
-    attri_to_split = min(candidate_split_index, lambda k: candidate_split_index[k][0]) # 返回ent最小的对应index
+    attri_to_split = min(candidate_split_index, key = lambda k: candidate_split_index[k][0]) # 返回ent最小的对应index
     split_value = candidate_split_index[attri_to_split][1] # 获取分割值，离散属性则为None
 
     # print('attri_to_split = {}'.format(attri_to_split))
