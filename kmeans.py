@@ -1,6 +1,7 @@
 import xlrd
 import random
-
+import numpy
+from collections import defaultdict
 
 # 计算欧式距离
 def distance(xi, xj):
@@ -19,30 +20,29 @@ def meanVec(dataset):
         v.append(sum/len(dataset))
     return v
 
+def clustering(dataset, U):
+    C = defaultdict(list)
+    for i in dataset :
+        index = numpy.argmin( map(lambda j: distance(i, j), U) )
+        C[index].append(i)
+    return C
+
 
 def kmeans(dataset, k=3):
     # U = [dataset[5], dataset[11], dataset[23]]
-    U = []
-    C = {}
     # 获取初始均值向量
-    for vec in random.sample(dataset, k):
-        U.append(vec)
+    U = random.sample(dataset, k)
     count = 0
-    while count <= 5:
-        for i in range(k):
-            C[i] = []
-        for i in range(len(dataset)):
-            dist = []
-            for j in range(len(U)):
-                dist.append(distance(dataset[i], U[j]))
-            r = dist.index(min(dist))
-            C[r].append(dataset[i])
+    for count in range(5):
+        C = clustering(dataset, U)
         print('第{}次的 U = {}\n'.format(count, U))
         print('第{}次的 C = {}\n'.format(count, C))
-        for i in range(k):  # 0,1,2
-           U[i] = meanVec(C[i])
-        count += 1
-    return C
+        new_U = list(map(lambda i:meanVec(C[i]), C))
+        if new_U == U :
+            return C
+        else :
+            U = new_U
+    return {}
 
 
 if __name__ == '__main__':
